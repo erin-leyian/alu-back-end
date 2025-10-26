@@ -7,29 +7,39 @@ import sys
 
 def main():
     """main function"""
-    user_id = int(sys.argv[1])
-    todo_url = 'https://jsonplaceholder.typicode.com/todos'
-    user_url = 'https://jsonplaceholder.typicode.com/users/{}'.format(user_id)
+    if len(sys.argv) < 2:
+        print("Usage: python3 script.py <user_id>")
+        return
 
-    response = requests.get(todo_url)
+    try:
+        user_id = int(sys.argv[1])
+    except ValueError:
+        print("User ID must be an integer")
+        return
 
-    total_questions = 0
-    completed = []
-    for todo in response.json():
+    # API endpoints
+    user_url = f'https://jsonplaceholder.typicode.com/users/{user_id}'
+    todo_url = f'https://jsonplaceholder.typicode.com/todos?userId={user_id}'
 
-        if todo['userId'] == user_id:
-            total_questions += 1
+    # Get user info
+    user_response = requests.get(user_url)
+    if user_response.status_code != 200:
+        print("User not found")
+        return
 
-            if todo['completed']:
-                completed.append(todo['title'])
+    user_name = user_response.json().get('name')
 
-    user_name = requests.get(user_url).json()['name']
+    # Get todo list for this user only
+    todos = requests.get(todo_url).json()
 
-    printer = ("Employee {} is done with tasks({}/{}):".format(user_name,
-               len(completed), total_questions))
-    print(printer)
-    for q in completed:
-        print("\t {}".format(q))
+    # Count tasks
+    total_tasks = len(todos)
+    completed_tasks = [t['title'] for t in todos if t['completed']]
+
+    # Output format
+    print(f"Employee {user_name} is done with tasks({len(completed_tasks)}/{total_tasks}):")
+    for task in completed_tasks:
+        print(f"\t {task}")
 
 
 if __name__ == '__main__':
