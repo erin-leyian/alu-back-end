@@ -1,44 +1,45 @@
 #!/usr/bin/python3
 """
-Script that uses a REST API to return TODO list progress
-for a given employee ID.
+    Given employee ID, returns information about his/her TODO list progress.
 """
+
+
 import requests
 import sys
 
+base_url = 'https://jsonplaceholder.typicode.com/'
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: ./0-gather_data_from_an_API.py <employee_id>")
-        sys.exit(1)
 
+def do_request():
+    '''Performs request'''
+    if len(sys.argv) < 2:
+        return print('USAGE:', __file__, '<employee id>')
+    eid = sys.argv[1]
     try:
-        employee_id = int(sys.argv[1])
+        _eid = int(sys.argv[1])
     except ValueError:
-        print("Employee ID must be an integer.")
-        sys.exit(1)
+        return print('Employee id must be an integer')
 
-    # API endpoints
-    user_url = "https://jsonplaceholder.typicode.com/users/{}".format(
-        employee_id
-    )
-    todos_url = "https://jsonplaceholder.typicode.com/todos?userId={}".format(
-        employee_id
-    )
+    response = requests.get(base_url + 'users/' + eid)
+    if response.status_code == 404:
+        return print('User id not found')
+    elif response.status_code != 200:
+        return print('Error: status_code:', response.status_code)
+    user = response.json()
 
-    # Fetch data
-    user = requests.get(user_url).json()
-    todos = requests.get(todos_url).json()
+    response = requests.get(base_url + 'todos/')
+    if response.status_code != 200:
+        return print('Error: status_code:', response.status_code)
+    todos = response.json()
 
-    employee_name = user.get("name")
-    total_tasks = len(todos)
-    done_tasks = [task for task in todos if task.get("completed")]
+    user_todos = [todo for todo in todos
+                  if todo.get('userId') == user.get('id')]
+    completed = [todo for todo in user_todos if todo.get('completed')]
+    print('Employee', user.get('name'),
+          'is done with tasks({}/{}):'.
+          format(len(completed), len(user_todos)))
+    [print('\t', todo.get('title')) for todo in completed]
 
-    print(
-        "Employee {} is done with tasks({}/{}):".format(
-            employee_name, len(done_tasks), total_tasks
-        )
-    )
 
-    for task in done_tasks:
-        print("\t {}".format(task.get("title")))
+if __name__ == '__main__':
+    do_request()
