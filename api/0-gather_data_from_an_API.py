@@ -1,22 +1,44 @@
 #!/usr/bin/python3
 """
-Uses https://jsonplaceholder.typicode.com along with an employee ID to
-return information about the employee's todo list progress
+Script that uses a REST API to return TODO list progress
+for a given employee ID.
 """
-
 import requests
-from sys import argv
+import sys
 
-if __name__ == '__main__':
-    userId = argv[1]
-    user = requests.get("https://jsonplaceholder.typicode.com/users/{}".
-                        format(userId), verify=False).json()
-    todo = requests.get("https://jsonplaceholder.typicode.com/todos?userId={}".
-                        format(userId), verify=False).json()
-    completed_tasks = []
-    for task in todo:
-        if task.get('completed') is True:
-            completed_tasks.append(task.get('title'))
-    print("Employee {} is done with tasks({}/{}):".
-          format(user.get('name'), len(completed_tasks), len(todo)))
-    print("\n".join("\t {}".format(task) for task in completed_tasks))
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: ./0-gather_data_from_an_API.py <employee_id>")
+        sys.exit(1)
+
+    try:
+        employee_id = int(sys.argv[1])
+    except ValueError:
+        print("Employee ID must be an integer.")
+        sys.exit(1)
+
+    # API endpoints
+    user_url = "https://jsonplaceholder.typicode.com/users/{}".format(
+        employee_id
+    )
+    todos_url = "https://jsonplaceholder.typicode.com/todos?userId={}".format(
+        employee_id
+    )
+
+    # Fetch data
+    user = requests.get(user_url).json()
+    todos = requests.get(todos_url).json()
+
+    employee_name = user.get("name")
+    total_tasks = len(todos)
+    done_tasks = [task for task in todos if task.get("completed")]
+
+    print(
+        "Employee {} is done with tasks({}/{}):".format(
+            employee_name, len(done_tasks), total_tasks
+        )
+    )
+
+    for task in done_tasks:
+        print("\t {}".format(task.get("title")))
